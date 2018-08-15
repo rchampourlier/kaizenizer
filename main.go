@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
+	"github.com/rchampourlier/kaizenizer-jira-metrics/metrics"
 	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
 )
 
@@ -58,129 +58,25 @@ func main() {
 }
 
 func generateMetrics(s *store.PGStore, events chan store.Event, segmentPrefix string) {
-	ltEvents := make(chan store.Event, 0)
-	ctEvents := make(chan store.Event, 0)
-	go generateMetricLeadTime(s, ltEvents, segmentPrefix)
-	go generateMetricCycleTime(s, ctEvents, segmentPrefix)
-	for evt := range events {
-		ltEvents <- evt
-		ctEvents <- evt
+	metricsGenerators := []func(*store.PGStore, chan store.Event, string){
+		metrics.LeadTime,
+		metrics.CycleTime,
 	}
-	close(ltEvents)
-	close(ctEvents)
+	eventsChans := make([](chan store.Event), 0)
+	for _, mg := range metricsGenerators {
+		eventsChan := make(chan store.Event, 0)
+		eventsChans = append(eventsChans, eventsChan)
+		go mg(s, eventsChan, segmentPrefix)
+	}
+	for evt := range events {
+		for _, eventsChan := range eventsChans {
+			eventsChan <- evt
+		}
+	}
+	for _, eventsChan := range eventsChans {
+		close(eventsChan)
+	}
 	s.FlushMetrics()
-}
-
-func generateMetricLeadTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
-	// m is a map issueKey -> {start, end of lead time}
-	type bounds struct {
-		complete   bool
-		start, end time.Time
-	}
-	m := make(map[string]bounds)
-
-	var countIssues, countEvts, countMetrics int
-	reopenedIssues := make(map[string]bool)
-	for evt := range events {
-		countEvts++
-		if _, ok := m[evt.IssueKey]; !ok {
-			// Issue has not been seen yet
-			countIssues++
-			m[evt.IssueKey] = bounds{complete: false, start: evt.Time}
-		} else {
-			if m[evt.IssueKey].complete {
-				reopenedIssues[evt.IssueKey] = true
-				//log.Printf("processing event for resolved issue: %s\n", evt)
-			} else {
-				if evt.ValueTo == "done" {
-					b := bounds{
-						complete: true,
-						start:    m[evt.IssueKey].start,
-						end:      evt.Time,
-					}
-					m[evt.IssueKey] = b
-					segment := fmt.Sprintf("%s/%s", segmentPrefix, evt.IssueKey)
-					leadTime := b.end.Sub(b.start) / (24 * time.Hour)
-					t := evt.Time
-					name := "lead_time"
-					value := float64(leadTime)
-					countMetrics++
-					s.WriteMetric(store.Metric{
-						Time:    t,
-						Name:    name,
-						Segment: segment,
-						Value:   value,
-					})
-				}
-			}
-		}
-	}
-	log.Printf("pushed %d `%s` metrics for %d issues (%.1f%% issues with status changes after resolution)\n",
-		countMetrics,
-		"lead_time",
-		countIssues,
-		float32(len(reopenedIssues))/float32(countIssues)*100,
-	)
-}
-
-func generateMetricCycleTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
-	// m is a map issueKey -> {start, end of cycle time}
-	type bounds struct {
-		wipSeen    bool
-		doneSeen   bool
-		start, end time.Time
-	}
-	m := make(map[string]bounds)
-
-	var countIssues, countEvts, countMetrics int
-	for evt := range events {
-		countEvts++
-		if _, ok := m[evt.IssueKey]; !ok {
-			// Issue has not been seen yet
-			// Setting `start` in case the issue does not go through
-			// a `wip` status
-			countIssues++
-			m[evt.IssueKey] = bounds{
-				wipSeen:  false,
-				doneSeen: false,
-				start:    evt.Time,
-			}
-		} else if !m[evt.IssueKey].wipSeen && evt.ValueTo == "wip" {
-			// Issue has been seen but `wip` not yet
-			// (we don't want to override `start` if the issue
-			// goes through `wip` several times)
-			m[evt.IssueKey] = bounds{
-				wipSeen:  true,
-				doneSeen: false,
-				start:    evt.Time,
-			}
-		} else if !m[evt.IssueKey].doneSeen && evt.ValueTo == "done" {
-			b := bounds{
-				wipSeen:  m[evt.IssueKey].wipSeen,
-				doneSeen: true,
-				start:    m[evt.IssueKey].start,
-				end:      evt.Time,
-			}
-			m[evt.IssueKey] = b
-			segment := fmt.Sprintf("%s/%s", segmentPrefix, evt.IssueKey)
-			cycleTime := b.end.Sub(b.start) / (24 * time.Hour)
-			t := evt.Time
-			name := "cycle_time"
-			value := float64(cycleTime)
-			countMetrics++
-			s.WriteMetric(store.Metric{
-				Time:    t,
-				Name:    name,
-				Segment: segment,
-				Value:   value,
-			})
-		}
-	}
-	log.Printf("pushed %d `%s` metrics for %d issues\n",
-		countMetrics,
-		"cycle_time",
-		countIssues,
-	)
 }
 
 func usage() {

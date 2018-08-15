@@ -26,7 +26,7 @@ These statuses are mapped from Jira original statuses. The mapping is done in `s
 
 ### Lead Time
 
-_Lead Time_ is the time an issue took to get from creation to resolution.
+_Lead Time_ is the time an issue took to get from creation to _resolved_.
 
 - The creation is detected by using the first `status_changed` event (ordered on `event_time`).
 - The resolution is defined by the `status_changed` event when the issue moves to `resolved`.
@@ -52,7 +52,9 @@ _Lead Time_ is the time an issue took to get from creation to resolution.
 
 ### Cycle Time
 
-_Cycle Time_ 
+_Cycle Time_ is the duration an issue took to get from _wip_ to _done_.
+
+The implementation is similar to Lead Time's.
 
 ## License
 
