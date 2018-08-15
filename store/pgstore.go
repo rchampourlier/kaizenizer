@@ -3,27 +3,38 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"github.com/rchampourlier/golib/slices"
 	"log"
+	"sync"
 	"time"
 
-	_ "github.com/lib/pq" // PG engine for database/sql
+	pq "github.com/lib/pq" // PG engine for database/sql
 )
 
-// BulkSize is the max size of slices sent to the database
+// BatchSize is the max size of slices sent to the database
 // through bulk imports.
-const BulkSize = 10000
+const BatchSize = 10000
 
 // PGStore implements the application's `Store` with a
 // Postgres DB backend.
 type PGStore struct {
 	*sql.DB
+	metrics chan Metric
+	wg      *sync.WaitGroup
 }
 
 // NewPGStore returns a `PGStore` storing the specified DB.
 // The passed DB should already be open and ready to
 // receive queries.
 func NewPGStore(db *sql.DB) *PGStore {
-	return &PGStore{db}
+	metrics := make(chan Metric, 0)
+	s := PGStore{
+		db,
+		metrics,
+		&sync.WaitGroup{},
+	}
+	go s.processMetricsFromChan(metrics)
+	return &s
 }
 
 // Event represents the event loaded from the database,
@@ -33,8 +44,12 @@ type Event struct {
 	Time      time.Time
 	Kind      string
 	IssueKey  string
-	ValueFrom *string
-	ValueTo   *string
+	ValueFrom string
+	ValueTo   string
+}
+
+func (e Event) String() string {
+	return fmt.Sprintf("{EVENT:%s - %s - issue:%s - from:%s - to:%s}", e.Kind, e.Time.Format(time.RFC3339), e.IssueKey, e.ValueFrom, e.ValueTo)
 }
 
 // Metric represents a metric to be stored to the DB.
@@ -45,19 +60,72 @@ type Metric struct {
 	Value   float64
 }
 
-// WriteMetrics writes a slice of metric records to the database.
-// TODO: bulk imports for large slices
-func (s *PGStore) WriteMetrics(metrics []Metric) {
-	query := `
-	INSERT INTO jira_metrics (
-		time,
-		name,
-		segment,
-		value
-	) 
-	VALUES ($1, $2, $3, $4);
-	`
-	s.exec([]string{query})
+// WriteMetric writes a metric record to the database.
+func (s *PGStore) WriteMetric(metric Metric) {
+	s.wg.Add(1)
+	s.metrics <- metric
+}
+
+// FlushMetrics ensures all metrics sent through `WriteMetric`
+// have been processed.
+func (s *PGStore) FlushMetrics() {
+	close(s.metrics)
+	s.wg.Wait()
+}
+
+func (s *PGStore) processMetricsFromChan(metrics chan Metric) {
+	i := 0
+	metricsBatch := make([]Metric, BatchSize)
+	s.wg.Add(1) // for the last batch
+	for metric := range metrics {
+		// Read in the channel to fill a batch
+		metricsBatch[i] = metric
+		i++
+		if i == BatchSize {
+			// The batch is filled
+			s.writeMetricsBatch(metricsBatch)
+			i = 0
+		}
+		s.wg.Done()
+	}
+	// The channel has been closed
+	s.writeMetricsBatch(metricsBatch[:i])
+	s.wg.Done() // for the last batch
+}
+
+func (s *PGStore) writeMetricsBatch(metricsBatch []Metric) {
+	log.Printf("writeMetricsBatch: %d items\n", len(metricsBatch))
+	txn, err := s.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := txn.Prepare(pq.CopyIn("metrics", "time", "name", "segment", "value"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, metric := range metricsBatch {
+		_, err = stmt.Exec(metric.Time, metric.Name, metric.Segment, metric.Value)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // StreamEvents will generate a stream of `Event` records from
@@ -78,6 +146,7 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 			assignee_change_to
 		FROM jira_issues_events
 		WHERE %s = $1
+		ORDER BY event_time ASC
 		`, segmentColumn)
 		rows, err := s.Query(query, segmentValue)
 		if err != nil {
@@ -103,9 +172,9 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 
 			switch kind {
 			case "status_changed":
-				events <- Event{t, kind, issueKey, statusFrom, statusTo}
-			case "assignee_changed":
-				events <- Event{t, kind, issueKey, assigneeFrom, assigneeTo}
+				statusGroupFrom := statusGroup(statusFrom)
+				statusGroupTo := statusGroup(statusTo)
+				events <- Event{t, kind, issueKey, statusGroupFrom, statusGroupTo}
 			}
 		}
 		if err := rows.Err(); err != nil {
@@ -117,14 +186,14 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 	return events
 }
 
-// CreateTables creates the `jira_metrics` table.
+// CreateTables creates the `metrics` table.
 func (s *PGStore) CreateTables() {
 	queries := []string{
-		`CREATE TABLE "jira_metrics" (
+		`CREATE TABLE "metrics" (
 			"id" SERIAL PRIMARY KEY NOT NULL,
 			"inserted_at" TIMESTAMP(6) NOT NULL DEFAULT statement_timestamp(),
 			"time" TIMESTAMP(6) NOT NULL,
-			"kind" TEXT,
+			"name" TEXT,
 			"segment" TEXT,
 			"value" DOUBLE PRECISION
 		);`,
@@ -139,7 +208,7 @@ func (s *PGStore) CreateTables() {
 // (`jira_issues_events` and `jira_issues_states`)
 func (s *PGStore) DropTables() {
 	queries := []string{
-		`DROP TABLE IF EXISTS "jira_metrics";`,
+		`DROP TABLE IF EXISTS "metrics";`,
 	}
 	err := s.exec(queries)
 	if err != nil {
@@ -156,4 +225,78 @@ func (s *PGStore) exec(cmds []string) (err error) {
 		}
 	}
 	return
+}
+
+func statusGroup(status *string) string {
+	if status == nil {
+		return ""
+	}
+	groups := map[string][]string{
+		"backlog": []string{
+			"Wait/Watch",
+			"Open",
+			"Selected for spec",
+			"To Price",
+			"To Do",
+			"Reopened",
+			"ToDo",
+			"In Preparation",
+			"Ready for development",
+			"Selected for Development",
+			"Open / Ready for dev",
+			"Backlog",
+		},
+		"wip": []string{
+			"To be tested",
+			"Developed",
+			"Waiting for validation",
+			"In Staging",
+			"Ready for Testing",
+			"In Spec Review",
+			"Ready for sprint",
+			"Tech review",
+			"In Spec",
+			"Quality check",
+			"Technical review",
+			"Développement",
+			"Release for Review",
+			"Stand-by",
+			"Ready for Review",
+			"In Development",
+			"In Progress",
+			"Functional Review",
+			"Pending",
+			"Pemding",
+			"In Testing",
+			"Ready for Staging",
+			"To validate",
+			"In Review",
+			"In Design",
+			"In Dev",
+			"In Functional Review",
+		},
+		"done": []string{
+			"To announce",
+			"Ready for deploy",
+			"Ready",
+			"To be released",
+			"Functional GO",
+			"Ready for Release",
+		},
+		"resolved": []string{
+			"Closed",
+			"Canceled",
+			"Terminé",
+			"Done",
+			"Released",
+			"Resolved",
+		},
+	}
+	for group, statuses := range groups {
+		if slices.StringsContain(statuses, *status) {
+			return group
+		}
+	}
+	log.Fatalf("Status did not match any group: %s", *status)
+	return ""
 }
