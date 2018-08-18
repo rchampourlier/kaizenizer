@@ -4,10 +4,10 @@
 
 - [x] Lead Time
 - [x] Cycle Time
-- [ ] Number of Issues in `backlog` status
-- [ ] Number of Issues in `wip` status
-- [ ] Number of Issues in `done` status
-- [ ] Number of Issues in `resolved` status
+- [x] Number of Issues in `backlog` status
+- [x] Number of Issues in `wip` status
+- [x] Number of Issues in `done` status
+- [x] Number of Issues in `resolved` status
 - [ ] Number of Active Developers
 - [ ] Ratio Active Developers / WIP
 
@@ -55,6 +55,24 @@ _Lead Time_ is the time an issue took to get from creation to _resolved_.
 _Cycle Time_ is the duration an issue took to get from _wip_ to _done_.
 
 The implementation is similar to Lead Time's.
+
+### Flow Diagram Counters
+
+Counts the number of issues in each status. A metric is pushed for all counters each time the status of an issue changes.
+
+#### Implementation details
+
+- Create a map (issue -> current status)
+- Create a map (status -> count) 
+- For each `status_changed` event:
+  - If the issue is not in the map:
+    - Add it to the map with `event.ValueTo` as value
+  - Else:
+    - If the status in the map is different from `event.ValueTo`:
+      - Decrement the counter for the issue status from the map
+      - Update the value with `event.ValueTo`
+      - Increment the counter for the status `event.ValueTo`
+  - Push a metric for each counter
 
 ## License
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/rchampourlier/kaizenizer-jira-metrics/metrics"
 	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
@@ -58,25 +59,43 @@ func main() {
 }
 
 func generateMetrics(s *store.PGStore, events chan store.Event, segmentPrefix string) {
-	metricsGenerators := []func(*store.PGStore, chan store.Event, string){
-		metrics.LeadTime,
-		metrics.CycleTime,
+	wgGenerators := sync.WaitGroup{}
+
+	// TODO: initialize the generator with the events chan
+	metricsGenerators := []metrics.Generator{
+		metrics.LeadTime{},
+		metrics.CycleTime{},
+		metrics.Counters{},
 	}
-	eventsChans := make([](chan store.Event), 0)
-	for _, mg := range metricsGenerators {
-		eventsChan := make(chan store.Event, 0)
-		eventsChans = append(eventsChans, eventsChan)
-		go mg(s, eventsChan, segmentPrefix)
+	wgGenerators.Add(3)
+
+	eventsChans := make([](chan store.Event), len(metricsGenerators))
+	metricsChans := make([](chan store.Metric), len(metricsGenerators))
+	for i, gen := range metricsGenerators {
+		eventsChans[i] = make(chan store.Event, 0)
+		metricsChans[i] = make(chan store.Metric, 0)
+
+		go func(ms chan store.Metric) {
+			for m := range ms {
+				s.WriteMetric(store.Metric(m))
+			}
+		}(metricsChans[i])
+
+		go func(g metrics.Generator, j int) {
+			g.Generate(eventsChans[j], segmentPrefix, s)
+			wgGenerators.Done()
+		}(gen, i)
 	}
 	for evt := range events {
 		for _, eventsChan := range eventsChans {
-			eventsChan <- evt
+			eventsChan <- store.Event(evt)
 		}
 	}
 	for _, eventsChan := range eventsChans {
 		close(eventsChan)
 	}
-	s.FlushMetrics()
+	wgGenerators.Wait()
+	s.DoneAndWait() // tell it's done and wait for everything to be written
 }
 
 func usage() {
@@ -94,7 +113,7 @@ func openDB() *sql.DB {
 	db, err := sql.Open("postgres", connStr)
 	db.SetMaxOpenConns(MaxOpenConns)
 	if err != nil {
-		log.Fatalln(fmt.Errorf("error in `openDB`: %s", err))
+		log.Fatalln(fmt.Errorf("[main] error in `openDB`: %s", err))
 	}
 	return db
 }

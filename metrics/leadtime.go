@@ -8,8 +8,12 @@ import (
 	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
 )
 
-// LeadTime generates the _Lead Time_ metrics.
-func LeadTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
+// LeadTime implements `Generator` for the _Cycle Time_
+// metric.
+type LeadTime struct{}
+
+// Generate generates the _Lead Time_ metrics.
+func (g LeadTime) Generate(events chan store.Event, segmentPrefix string, s *store.PGStore) {
 	// m is a map issueKey -> {start, end of lead time}
 	type bounds struct {
 		complete   bool
@@ -19,6 +23,7 @@ func LeadTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
 
 	var countIssues, countEvts, countMetrics int
 	reopenedIssues := make(map[string]bool)
+
 	for evt := range events {
 		countEvts++
 		if _, ok := m[evt.IssueKey]; !ok {
@@ -28,7 +33,6 @@ func LeadTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
 		} else {
 			if m[evt.IssueKey].complete {
 				reopenedIssues[evt.IssueKey] = true
-				//log.Printf("processing event for resolved issue: %s\n", evt)
 			} else {
 				if evt.ValueTo == "done" {
 					b := bounds{
@@ -53,9 +57,8 @@ func LeadTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
 			}
 		}
 	}
-	log.Printf("pushed %d `%s` metrics for %d issues (%.1f%% issues with status changes after resolution)\n",
+	log.Printf("[metrics/leadtime] pushed %d metrics (for %d issues, %.1f%% with status changes after resolution)\n",
 		countMetrics,
-		"lead_time",
 		countIssues,
 		float32(len(reopenedIssues))/float32(countIssues)*100,
 	)

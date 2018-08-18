@@ -8,8 +8,12 @@ import (
 	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
 )
 
-// CycleTime generates _Cycle Time_ metrics.
-func CycleTime(s *store.PGStore, events chan store.Event, segmentPrefix string) {
+// CycleTime implements `Generator` for the _Cycle Time_
+// metric.
+type CycleTime struct{}
+
+// Generate generates _Cycle Time_ metrics.
+func (g CycleTime) Generate(events chan store.Event, segmentPrefix string, s *store.PGStore) {
 	// m is a map issueKey -> {start, end of cycle time}
 	type bounds struct {
 		wipSeen    bool
@@ -19,6 +23,7 @@ func CycleTime(s *store.PGStore, events chan store.Event, segmentPrefix string) 
 	m := make(map[string]bounds)
 
 	var countIssues, countEvts, countMetrics int
+
 	for evt := range events {
 		countEvts++
 		if _, ok := m[evt.IssueKey]; !ok {
@@ -62,9 +67,8 @@ func CycleTime(s *store.PGStore, events chan store.Event, segmentPrefix string) 
 			})
 		}
 	}
-	log.Printf("pushed %d `%s` metrics for %d issues\n",
+	log.Printf("[metrics/cycletime] pushed %d metrics (for %d issues)\n",
 		countMetrics,
-		"cycle_time",
 		countIssues,
 	)
 }
