@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/rchampourlier/kaizenizer-jira-metrics/metrics"
-	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
+	"github.com/rchampourlier/kaizenizer/metrics"
+	"github.com/rchampourlier/kaizenizer/store"
 )
 
 const poolSize = 10

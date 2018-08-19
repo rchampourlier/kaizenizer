@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
+	"github.com/rchampourlier/kaizenizer/store"
 )
 
 // LeadTime implements `Generator` for the _Cycle Time_

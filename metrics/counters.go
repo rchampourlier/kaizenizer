@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
+	"github.com/rchampourlier/kaizenizer/store"
 )
 
 // Counters implements `Generator` for the _Counters_

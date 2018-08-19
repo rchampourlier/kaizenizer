@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/rchampourlier/kaizenizer-jira-metrics/store"
+	"github.com/rchampourlier/kaizenizer/store"
 )
 
 // Generator is the interface for the generators of metrics.
