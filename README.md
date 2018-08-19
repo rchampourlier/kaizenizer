@@ -14,9 +14,9 @@ Measuring KPIs for a product development team is required to drive continuous im
 - [x] Cycle Time
 - [ ] Counts of issues per type and status. This enables the following measures:
   - [ ] Number of `Bug` or `Technical Debt` issues over time
-  - [ ] Number of issues in `WIP`
+  - [x] Number of issues in `WIP`
   - [ ] Ratio of issues in `WIP` to number of developers
-  - [ ] Cumulative flow diagrams
+  - [x] Cumulative flow diagrams
 - [ ] Code inventory
 
 ### Inspiration
