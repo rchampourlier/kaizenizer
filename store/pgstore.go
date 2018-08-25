@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/rchampourlier/golib/slices"
 	"log"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -52,6 +54,7 @@ type Event struct {
 	Time      time.Time
 	Kind      string
 	IssueKey  string
+	IssueType string
 	ValueFrom string
 	ValueTo   string
 }
@@ -140,6 +143,7 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 			event_time,
 			event_kind,
 			issue_key, 
+			issue_type,
 			status_change_from,
 			status_change_to,
 			assignee_change_from,
@@ -155,12 +159,13 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 		defer rows.Close()
 		for rows.Next() {
 			var t time.Time
-			var kind, issueKey string
+			var kind, issueKey, issueType string
 			var statusFrom, statusTo, assigneeFrom, assigneeTo *string
 			err := rows.Scan(
 				&t,
 				&kind,
 				&issueKey,
+				&issueType,
 				&statusFrom,
 				&statusTo,
 				&assigneeFrom,
@@ -175,7 +180,14 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 				statusGroupFrom := statusGroup(statusFrom)
 				statusGroupTo := statusGroup(statusTo)
 				if statusGroupFrom != statusGroupTo {
-					events <- Event{t, kind, issueKey, statusGroupFrom, statusGroupTo}
+					events <- Event{
+						t,
+						kind,
+						issueKey,
+						issueTypeGroup(issueType),
+						statusGroupFrom,
+						statusGroupTo,
+					}
 				}
 			}
 		}
@@ -229,6 +241,15 @@ func (s *PGStore) exec(cmds []string) (err error) {
 	return
 }
 
+/* ============================= *
+ * MAPPING	                 *
+ * ============================= */
+
+// statusGroup maps the Jira status to a simpler status used for
+// metrics.
+//
+// Currently, statuses used in metrics are:
+// backlog, wip, done, released.
 func statusGroup(status *string) string {
 	if status == nil {
 		return ""
@@ -301,4 +322,40 @@ func statusGroup(status *string) string {
 	}
 	log.Fatalf("Status did not match any group: %s", *status)
 	return ""
+}
+
+func issueTypeGroup(issueType string) string {
+	usIssueType := toUnderscore(issueType)
+	groups := map[string][]string{
+		"product": []string{
+			"epic",
+			"spec",
+			"improvement",
+			"story",
+			"new_feature",
+		},
+		"ops": []string{
+			"sso_launch",
+			"task",
+		},
+		"technical": []string{
+			"technical_task",
+			"sub_task",
+		},
+		"bug": []string{
+			"bug",
+		},
+	}
+	for group, types := range groups {
+		if slices.StringsContain(types, usIssueType) {
+			return group
+		}
+	}
+	log.Fatalf("Status did not match any group: %s", issueType)
+	return ""
+}
+
+func toUnderscore(str string) string {
+	lower := strings.ToLower(str)
+	return regexp.MustCompile("[\\s-]").ReplaceAllString(lower, "_")
 }
