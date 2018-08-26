@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1535303317147,
+  "iteration": 1535303317164,
   "links": [],
   "panels": [
     {
@@ -83,12 +83,12 @@
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "/lead_time_avg_.*/",
-          "color": "#64b0c8"
+          "alias": "/lead_.*/",
+          "color": "#e24d42"
         },
         {
-          "alias": "/cycle_time_avg_.*/",
-          "color": "#629e51"
+          "alias": "/cycle_.*/",
+          "color": "#70dbed"
         },
         {
           "alias": "/.*_long/",
@@ -96,7 +96,7 @@
         },
         {
           "alias": "/.*_short/",
-          "fill": 2,
+          "fill": 3,
           "linewidth": 0
         }
       ],
@@ -108,25 +108,25 @@
           "alias": "",
           "format": "time_series",
           "hide": false,
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS lead_time_avg_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS lead_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
           "refId": "A"
         },
         {
           "alias": "",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS cycle_time_avg_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS cycle_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
           "refId": "B"
         },
         {
           "alias": "",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 100 PRECEDING AND CURRENT ROW) AS lead_time_avg_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS lead_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
           "refId": "C"
         },
         {
           "alias": "",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 100 PRECEDING AND CURRENT ROW) AS cycle_time_avg_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS cycle_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
           "refId": "D"
         }
       ],
@@ -149,11 +149,12 @@
       },
       "yaxes": [
         {
+          "decimals": null,
           "format": "short",
-          "label": null,
-          "logBase": 1,
+          "label": "",
+          "logBase": 2,
           "max": null,
-          "min": null,
+          "min": "1",
           "show": true
         },
         {
@@ -516,7 +517,7 @@
     ]
   },
   "time": {
-    "from": "now-5y",
+    "from": "now-30d",
     "to": "now"
   },
   "timepicker": {
@@ -547,5 +548,5 @@
   "timezone": "",
   "title": "Kaizenizer",
   "uid": "UvLrIkpmk",
-  "version": 25
+  "version": 27
 }
