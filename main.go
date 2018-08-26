@@ -63,11 +63,10 @@ func generateMetrics(s *store.PGStore, events chan store.Event, segmentPrefix st
 
 	// TODO: initialize the generator with the events chan
 	metricsGenerators := []metrics.Generator{
-		metrics.LeadTime{},
-		metrics.CycleTime{},
+		metrics.NewLeadAndCycleTime(),
 		metrics.NewCounters(),
 	}
-	wgGenerators.Add(3)
+	wgGenerators.Add(2)
 
 	eventsChans := make([](chan store.Event), len(metricsGenerators))
 	metricsChans := make([](chan store.Metric), len(metricsGenerators))
