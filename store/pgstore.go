@@ -181,12 +181,12 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 				statusGroupTo := statusGroup(statusTo)
 				if statusGroupFrom != statusGroupTo {
 					events <- Event{
-						t,
-						kind,
-						issueKey,
-						issueTypeGroup(issueType),
-						statusGroupFrom,
-						statusGroupTo,
+						Time:      t,
+						Kind:      kind,
+						IssueKey:  issueKey,
+						IssueType: issueTypeGroup(issueType),
+						ValueFrom: statusGroupFrom,
+						ValueTo:   statusGroupTo,
 					}
 				}
 			}
@@ -258,6 +258,7 @@ func statusGroup(status *string) string {
 		"backlog": []string{
 			"Wait/Watch",
 			"Open",
+			"Ready",
 			"Selected for spec",
 			"To Price",
 			"To Do",
@@ -301,7 +302,6 @@ func statusGroup(status *string) string {
 		"done": []string{
 			"To announce",
 			"Ready for deploy",
-			"Ready",
 			"To be released",
 			"Functional GO",
 			"Ready for Release",
