@@ -55,6 +55,7 @@ type Event struct {
 	Kind      string
 	IssueKey  string
 	IssueType string
+	Segment   string
 	ValueFrom string
 	ValueTo   string
 }
@@ -134,6 +135,8 @@ func (s *PGStore) writeMetricsBatch(metricsBatch []Metric) {
 // StreamEvents will generate a stream of `Event` records from
 // the database's `jira_issues_events` table, filtered with a `WHERE`
 // clause on the `segmentColumn` and `segmentValue`.
+//
+// TODO: remove segment filtering, process all, add project to segment
 func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 	events := make(chan Event, 0)
 
@@ -144,6 +147,7 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 			event_kind,
 			issue_key, 
 			issue_type,
+			issue_tribe,
 			status_change_from,
 			status_change_to,
 			assignee_change_from,
@@ -160,12 +164,13 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 		for rows.Next() {
 			var t time.Time
 			var kind, issueKey, issueType string
-			var statusFrom, statusTo, assigneeFrom, assigneeTo *string
+			var issueTribe, statusFrom, statusTo, assigneeFrom, assigneeTo *string
 			err := rows.Scan(
 				&t,
 				&kind,
 				&issueKey,
 				&issueType,
+				&issueTribe,
 				&statusFrom,
 				&statusTo,
 				&assigneeFrom,
@@ -185,6 +190,7 @@ func (s *PGStore) StreamEvents(segmentColumn, segmentValue string) chan Event {
 						Kind:      kind,
 						IssueKey:  issueKey,
 						IssueType: issueTypeGroup(issueType),
+						Segment:   segment(issueTribe),
 						ValueFrom: statusGroupFrom,
 						ValueTo:   statusGroupTo,
 					}
@@ -355,7 +361,17 @@ func issueTypeGroup(issueType string) string {
 	return ""
 }
 
+func segment(issueTribe *string) string {
+	tribe := "none"
+	if issueTribe != nil {
+		tribe = *issueTribe
+	}
+	usTribe := toUnderscore(tribe)
+
+	return fmt.Sprintf("tribe_%s", usTribe)
+}
+
 func toUnderscore(str string) string {
 	lower := strings.ToLower(str)
-	return regexp.MustCompile("[\\s-]").ReplaceAllString(lower, "_")
+	return regexp.MustCompile("[\\s-/]").ReplaceAllString(lower, "_")
 }
