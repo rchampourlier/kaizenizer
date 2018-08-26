@@ -41,7 +41,7 @@ func (g LeadTime) Generate(events chan store.Event, segmentPrefix string, s *sto
 						end:      evt.Time,
 					}
 					m[evt.IssueKey] = b
-					segment := fmt.Sprintf("%s/%s", segmentPrefix, evt.IssueKey)
+					segment := fmt.Sprintf("%s", segmentPrefix)
 					leadTime := b.end.Sub(b.start) / (24 * time.Hour)
 					t := evt.Time
 					name := "lead_time"
