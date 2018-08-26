@@ -45,6 +45,7 @@ type Metric struct {
 	Name    string
 	Segment string
 	Value   float64
+	Comment string
 }
 
 // Event represents the Event loaded from the database,
@@ -101,13 +102,13 @@ func (s *PGStore) writeMetricsBatch(metricsBatch []Metric) {
 		log.Fatal(err)
 	}
 
-	stmt, err := txn.Prepare(pq.CopyIn("metrics", "time", "name", "segment", "value"))
+	stmt, err := txn.Prepare(pq.CopyIn("metrics", "time", "name", "segment", "value", "comment"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, metric := range metricsBatch {
-		_, err = stmt.Exec(metric.Time, metric.Name, metric.Segment, metric.Value)
+		_, err = stmt.Exec(metric.Time, metric.Name, metric.Segment, metric.Value, metric.Comment)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -215,7 +216,8 @@ func (s *PGStore) CreateTables() {
 			"time" TIMESTAMP(6) NOT NULL,
 			"name" TEXT,
 			"segment" TEXT,
-			"value" DOUBLE PRECISION
+			"value" DOUBLE PRECISION,
+			"comment" TEXT
 		);`,
 	}
 	err := s.exec(queries)
