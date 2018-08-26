@@ -2,9 +2,6 @@
 
 ## Ongoing
 
-- [x] Handle issues that are reopened when calculating lead and cycle time
-  - [x] Add a comment column in metrics and specify the issue key
-
 ## Next
 
 - [ ] Deploy

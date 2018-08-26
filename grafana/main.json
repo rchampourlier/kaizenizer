@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1535303317164,
+  "iteration": 1535303317167,
   "links": [],
   "panels": [
     {
@@ -55,7 +55,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_KAIZENIZER-SOURCE}",
-      "description": "Lead and Cycle Time, rolling average over 10 and 100 issues",
+      "description": "Lead and Cycle Time, raw metric and rolling average over 10 issues",
       "fill": 0,
       "gridPos": {
         "h": 8,
@@ -65,13 +65,15 @@
       },
       "id": 2,
       "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
         "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 1,
@@ -83,19 +85,19 @@
       "renderer": "flot",
       "seriesOverrides": [
         {
-          "alias": "/lead_.*/",
+          "alias": "/lead.*/",
           "color": "#e24d42"
         },
         {
-          "alias": "/cycle_.*/",
+          "alias": "/cycle.*/",
           "color": "#70dbed"
         },
         {
-          "alias": "/.*_long/",
+          "alias": "/.*_avg/",
           "linewidth": 2
         },
         {
-          "alias": "/.*_short/",
+          "alias": "/(lead|cycle)$/",
           "fill": 3,
           "linewidth": 0
         }
@@ -108,35 +110,35 @@
           "alias": "",
           "format": "time_series",
           "hide": false,
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS lead_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  value AS lead\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'lead_time'\nORDER BY time ASC",
           "refId": "A"
         },
         {
           "alias": "",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS cycle_short\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
-          "refId": "B"
-        },
-        {
-          "alias": "",
-          "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS lead_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS lead_avg\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'lead_time'",
           "refId": "C"
         },
         {
           "alias": "",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS cycle_long\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
+          "rawSql": "SELECT\n  $__time(time),\n  value AS cycle\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'cycle_time'\nORDER BY time ASC",
+          "refId": "B"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  AVG(value)\n    OVER (ORDER BY time ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS cycle_avg\nFROM\n  metrics\nWHERE\n  $__timeFilter(time)\nAND name = 'cycle_time'",
           "refId": "D"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Lead and Cycle Time - Rolling average",
+      "title": "Lead and Cycle Time",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 1,
         "value_type": "individual"
       },
       "type": "graph",
@@ -548,5 +550,5 @@
   "timezone": "",
   "title": "Kaizenizer",
   "uid": "UvLrIkpmk",
-  "version": 27
+  "version": 29
 }
