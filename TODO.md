@@ -2,23 +2,22 @@
 
 ## Ongoing
 
-- [x] Add "tribe" segment (issue #5)
-- [x] Add tribe parameter to Grafana dashboard
+- [ ] Fix ratio of issues with status change after resolution (now at > 60%)
 
 ## Next
 
-- [ ] Fix ratio of issues with status change after resolution (now at > 60%)
-- [ ] Add metrics chart to show backlog issues' age (e.g. >1yr, 6-12mo, >1mo...)
-- [ ] Publish metrics for all counters when any counter is changed
-- [ ] Add index on `segment` column
-- [ ] Add issue type parameter to Grafana dashboard
-- [ ] Add segment on Lead/Cycle Time
+- [ ] Deploy
 
 ### Other metrics
 
+- [ ] Age of backlog issues (e.g. >1yr, 6-12mo, >1mo...)
 - [ ] Lead/Cycle Time per issue type
+  - [ ] as a Grafana dashboard parameter
+- [ ] Lead/Cycle Time per tribe
+  - [ ] as a Grafana dashboard parameter
 - [ ] Age of backlog issues
 
 ## Future
 
 - [ ] Make segments, statuses and other data customizable on Jira a configuration
+- [ ] Add index on `segment` column
