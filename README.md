@@ -40,6 +40,16 @@ For status changes, the `valueFrom` and `valueTo` fields will contain one of the
 
 These statuses are mapped from Jira original statuses. The mapping is done in `store/pgstore.go:statusGroup()`.
 
+## Troubleshooting
+
+### **MISMATCH** logs
+
+You can activate mismatch logging if you have some issues with counters that seems wrong (e.g. negative values). This may be due to issues in your mapping of statuses that do not match with the metrics' backlog -> wip -> done -> resolved workflow.
+
+Activating this logging will display `**MISMATCH**...` logs indicating which issues have mismatches, enabling you to investigate deeper.
+
+**TODO: enable activating mismatch logging using a parameter and document it**
+
 ## License
 
 MIT

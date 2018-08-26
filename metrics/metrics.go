@@ -6,6 +6,7 @@ import (
 
 // Generator is the interface for the generators of metrics.
 type Generator interface {
+
 	// Generate generates the metrics from the events received
 	// through the `events` chan and write them using
 	// `PGStore.WriteMetric(..)`

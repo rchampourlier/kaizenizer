@@ -65,7 +65,7 @@ func generateMetrics(s *store.PGStore, events chan store.Event, segmentPrefix st
 	metricsGenerators := []metrics.Generator{
 		metrics.LeadTime{},
 		metrics.CycleTime{},
-		metrics.Counters{},
+		metrics.NewCounters(),
 	}
 	wgGenerators.Add(3)
 
