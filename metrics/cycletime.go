@@ -53,7 +53,7 @@ func (g CycleTime) Generate(events chan store.Event, segmentPrefix string, s *st
 				end:      evt.Time,
 			}
 			m[evt.IssueKey] = b
-			segment := fmt.Sprintf("%s/%s", segmentPrefix, evt.IssueKey)
+			segment := fmt.Sprintf("%s", segmentPrefix)
 			cycleTime := b.end.Sub(b.start) / (24 * time.Hour)
 			t := evt.Time
 			name := "cycle_time"
