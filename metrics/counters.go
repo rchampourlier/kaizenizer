@@ -3,59 +3,99 @@ package metrics
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/rchampourlier/kaizenizer/store"
 )
 
 // Counters implements `Generator` for the _Counters_
 // metric.
-type Counters struct{}
+type Counters struct {
+	counters map[string]int    // name -> count
+	statuses map[string]string // issue key -> previous status
+}
 
-// Generate generates metrics for counts of issues in the different
-// statuses.
-func (g Counters) Generate(events chan store.Event, segmentPrefix string, s *store.PGStore) {
-	statuses := make(map[string]string)         // issueKey -> status
-	counters := make(map[string]map[string]int) // statusGroup -> issueTypeGroup -> count
+// NewCounters returns a `Counters` struct initialized with internal
+// data.
+func NewCounters() *Counters {
+	return &Counters{
+		make(map[string]int),
+		make(map[string]string),
+	}
+}
+
+// Generate generates metrics for counts of issues based on their status.
+//
+// Generated metrics:
+//   - Cumulative Flow Diagram: unresolved issues, split between backlog and WIP --> name=counter/cfd_(wip|backlog)
+//   - WIP composition: WIP issues, split between product, bug, technical, ops --> name=counter/wip_(product|bug|technical|ops)
+//   - Backlog composition: same as WIP composition, for backlog issues --> name=counter/backlog_(product|bug|technical|ops)
+//
+// TODO: pass a parameter to enable mismatch logging
+func (g *Counters) Generate(events chan store.Event, segmentPrefix string, s *store.PGStore) {
 	countMetrics := 0
 
 	for evt := range events {
-		key := evt.IssueKey
-		pushMetric := false
+		loggingMismatches := false
 
-		// Initialize the map for the event's issue type if
-		// it does not exist yet
-		if _, counterExists := counters[evt.IssueType]; !counterExists {
-			counters[evt.IssueType] = make(map[string]int)
+		statusWas := g.statuses[evt.IssueKey] // issue previous status
+		statusFrom, statusTo := evt.ValueFrom, evt.ValueTo
+		if loggingMismatches && statusWas != statusFrom {
+			log.Printf("**MISMATCH** was=%s from=%s for issue %s\n", statusWas, statusFrom, evt.IssueKey)
+			// TODO: add info in README/Troubleshooting to explain how to handle these messages
 		}
 
-		if _, ok := statuses[key]; !ok {
-			// Issue not in the map yet
-			counters[evt.IssueType][evt.ValueTo]++
-			statuses[key] = evt.ValueTo
-			pushMetric = true
+		// Updating issue's previous status
+		g.statuses[evt.IssueKey] = statusTo
 
-		} else if statuses[key] != evt.ValueTo {
-			counters[evt.IssueType][statuses[key]]--
-			statuses[key] = evt.ValueTo
-			counters[evt.IssueType][evt.ValueTo]++
-			pushMetric = true
-		}
+		g.updateCounters(statusWas, statusTo, evt.IssueType)
+		// Using statusWas and not statusFrom to update counters because some
+		// status change histories in Jira may be redondant (e.g. you may
+		// have twice a change from "Open" to "In Development", maybe because
+		// of workflow changes).
 
-		if pushMetric {
-			for statusGroup, types := range counters {
-				for issueTypeGroup, count := range types {
-					countMetrics++
-					s.WriteMetric(store.Metric{
-						Time:    evt.Time,
-						Name:    "counter",
-						Segment: fmt.Sprintf("%s/%s/%s", segmentPrefix, statusGroup, issueTypeGroup),
-						Value:   float64(count),
-					})
-				}
-			}
-		}
+		segment := fmt.Sprintf("%s", segmentPrefix)
+		countMetrics += g.pushMetrics(s, evt.Time, segment)
 	}
+
 	log.Printf("[metrics/counters] pushed %d metrics\n",
 		countMetrics,
 	)
+}
+
+func (g *Counters) updateCounters(from, to, issueType string) {
+	switch from {
+	case "backlog":
+		g.counters["cfd_backlog"]--
+	case "wip":
+		g.counters["cfd_wip"]--
+		g.counters[fmt.Sprintf("wip_%s", issueType)]--
+	}
+
+	switch to {
+	case "backlog":
+		g.counters["cfd_backlog"]++
+	case "wip":
+		g.counters["cfd_wip"]++
+		g.counters[fmt.Sprintf("wip_%s", issueType)]++
+	}
+
+	for n, v := range g.counters {
+		log.Printf("  counter/%s: %d\n", n, v)
+	}
+	log.Println("---")
+}
+
+func (g *Counters) pushMetrics(s *store.PGStore, t time.Time, segment string) int {
+	var countMetrics int
+	for name, count := range g.counters {
+		countMetrics++
+		s.WriteMetric(store.Metric{
+			Time:    t,
+			Name:    fmt.Sprintf("counter/%s", name),
+			Segment: segment,
+			Value:   float64(count),
+		})
+	}
+	return countMetrics
 }
