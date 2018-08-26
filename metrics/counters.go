@@ -67,6 +67,7 @@ func (g *Counters) updateCounters(from, to, issueType string) {
 	switch from {
 	case "backlog":
 		g.counters["cfd_backlog"]--
+		g.counters[fmt.Sprintf("backlog_%s", issueType)]--
 	case "wip":
 		g.counters["cfd_wip"]--
 		g.counters[fmt.Sprintf("wip_%s", issueType)]--
@@ -75,15 +76,11 @@ func (g *Counters) updateCounters(from, to, issueType string) {
 	switch to {
 	case "backlog":
 		g.counters["cfd_backlog"]++
+		g.counters[fmt.Sprintf("backlog_%s", issueType)]++
 	case "wip":
 		g.counters["cfd_wip"]++
 		g.counters[fmt.Sprintf("wip_%s", issueType)]++
 	}
-
-	for n, v := range g.counters {
-		log.Printf("  counter/%s: %d\n", n, v)
-	}
-	log.Println("---")
 }
 
 func (g *Counters) pushMetrics(s *store.PGStore, t time.Time, segment string) int {
