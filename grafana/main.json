@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1535303317167,
+  "iteration": 1535903017348,
   "links": [],
   "panels": [
     {
@@ -488,6 +488,245 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_KAIZENIZER-SOURCE}",
+      "description": "Number of WIP issues that have been in a WIP status for less than 1d, 1w, 1m and more.",
+      "fill": 3,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 17
+      },
+      "id": 11,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "1d",
+          "color": "#629e51"
+        },
+        {
+          "alias": "1w",
+          "color": "#f2c96d"
+        },
+        {
+          "alias": "1m",
+          "color": "#f9934e"
+        },
+        {
+          "alias": "more",
+          "color": "#bf1b00"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1d\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/wip_1d'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "A"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1w\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/wip_1w'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "B"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1m\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/wip_1m'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "C"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"more\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/wip_more'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "WIP age",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_KAIZENIZER-SOURCE}",
+      "description": "Number of backlog issues aged less than 1d, 1w, 1m and more.",
+      "fill": 3,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 17
+      },
+      "id": 10,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "1d",
+          "color": "#629e51"
+        },
+        {
+          "alias": "1w",
+          "color": "#f2c96d"
+        },
+        {
+          "alias": "1m",
+          "color": "#f9934e"
+        },
+        {
+          "alias": "more",
+          "color": "#bf1b00"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1d\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/backlog_1d'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "A"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1w\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/backlog_1w'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "B"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"1m\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/backlog_1m'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "C"
+        },
+        {
+          "alias": "",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(time),\n  SUM(value) AS \"more\"\nFROM metrics\nWHERE $__timeFilter(time)\nAND name = 'issuesAge/backlog_more'\nAND segment IN ($counters_segment)\nGROUP BY time\nORDER BY time ASC",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Backlog age",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": false,
@@ -519,7 +758,7 @@
     ]
   },
   "time": {
-    "from": "now-30d",
+    "from": "now-5y",
     "to": "now"
   },
   "timepicker": {
@@ -550,5 +789,5 @@
   "timezone": "",
   "title": "Kaizenizer",
   "uid": "UvLrIkpmk",
-  "version": 29
+  "version": 31
 }

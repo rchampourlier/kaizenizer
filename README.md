@@ -10,14 +10,31 @@ Measuring KPIs for a product development team is required to drive continuous im
 
 ### Metrics
 
-- [x] Lead Time
-- [x] Cycle Time
-- [ ] Counts of issues per type and status. This enables the following measures:
-  - [ ] Number of `Bug` or `Technical Debt` issues over time
-  - [x] Number of issues in `WIP`
-  - [ ] Ratio of issues in `WIP` to number of developers
-  - [x] Cumulative flow diagrams
-- [ ] Code inventory
+#### Lead and Cycle Time
+
+- The **Lead Time** is the duration between the issue's creation (based on the Jira issue's _CreationDate_) and it's resolution (based on the time it reaches a resolved status for the last time).
+- The **Cycle Time** is the duration between the moment the issue enters WIP (Work In Progress, i.e. someone starts working on it (e.g. before spec or dev) to the time it's done (ready to be released).
+
+#### Cumulative Flow Diagram
+
+The Cumulative Flow Diagram displays the cumulated number of issues in WIP and backlog status over time.
+
+#### WIP and Backlog composition
+
+Displays the number of issues per kind (e.g. product, bug, ops, technical) over time, for WIP and Backlog issues.
+
+#### WIP age
+
+Displays the number of issues whose _age_ (time since the issue last entered WIP and now) is in each of the following age buckets: 1d, 1w, 1m or more.
+
+#### Backlog age
+
+Same as for WIP age but for issues in backlog, considering the time since their creation.
+
+### Future metrics (TODO)
+
+- [ ] Ratio of issues in `WIP` to number of developers
+- [ ] Code inventory (using Github, e.g. cumulated open pull requests size)
 
 ### Inspiration
 
@@ -31,6 +48,8 @@ Though the project started a long time ago with [Agilizer](https://github.com/jo
 
 For all metrics, events are loaded from the database's `jira_issues_events` table and converted to `store.Event` structs. 
 
+### Statuses
+
 For status changes, the `valueFrom` and `valueTo` fields will contain one of the following statuses:
 
 - `backlog`
@@ -39,6 +58,17 @@ For status changes, the `valueFrom` and `valueTo` fields will contain one of the
 - `resolved`
 
 These statuses are mapped from Jira original statuses. The mapping is done in `store/pgstore.go:statusGroup()`.
+
+### Kinds
+
+The following issue _kinds_ are considered:
+
+- `product`
+- `bug`
+- `ops`
+- `technical`
+
+Again, the mapping from Jira original issue types is done in `store.pgstore.go:issueTypeGroup()`.
 
 ## Troubleshooting
 
