@@ -2,14 +2,11 @@
 
 ## Ongoing
 
-- [x] Age (current lead time) of backlog issues (e.g. >1yr, 6-12mo, >1mo...)
-- [x] Age (current cycle time) of WIP issues
-- [x] Updating README to explain metrics
-
 ## Next
 
 ### Metrics
 
+- [ ] Number of WIP per contributor
 - [ ] Parameterize Lead and Cycle Time
   - [ ] Per issue type
   - [ ] Per tribe
