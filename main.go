@@ -19,7 +19,9 @@ const MaxOpenConns = 5 // for Heroku Postgres
 
 // Main program
 //
-// ### reset
+// ### generate
+//
+// Calculate metrics.
 //
 // 1. Initializes the database (drops the necessary table `metrics`
 //    if it exists and creates it).
@@ -41,7 +43,7 @@ func main() {
 
 	switch os.Args[1] {
 
-	case "reset":
+	case "generate":
 		s.DropTables()
 		s.CreateTables()
 		generateMetrics(
@@ -102,8 +104,8 @@ func usage() {
 	fmt.Printf(`Usage: go run main.go <action>
 
 Available actions:
-  - reset
-  - cleanup
+  - generate (generate metrics)
+  - cleanup (cleans the database)
 `)
 	os.Exit(1)
 }

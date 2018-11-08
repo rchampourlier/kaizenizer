@@ -40,9 +40,44 @@ Same as for WIP age but for issues in backlog, considering the time since their 
 
 Though the project started a long time ago with [Agilizer](https://github.com/jobteaser/agilizer_source), the later updates have been heavily influenced by [SoundCloud's Project Development KPIs](https://github.com/soundcloud/project-dev-kpis) project. Their project is quite similar in its purpose, with a different technical implementation. The main difference is that `Kaizenizer` retrieves history data from Jira and Github to generate past metrics, while SoundCloud's will generate new metrics from the time it's started. And it's written in Python instead of Golang ;)
 
-## Use
+## How to use
 
-**TODO**
+### Requirements
+
+```
+cp .env.example .env
+```
+
+Edit the `.env` file to provide the URL to the database (`DB_URL`).
+
+### Generate metrics
+
+```
+source .env
+go run *.go generate
+```
+
+### Visualization with Grafana
+
+These metrics are best seen using Grafana.
+
+#### Start Grafana
+
+```
+docker run -d --name=grafana -p 3000:3000 grafana/grafana
+```
+
+
+#### Grafana Configuration
+
+- Access Grafana at [localhost:3000](http://localhost:3000). (NB: the default login/password is `admin`/`admin`).
+- Add a data source:
+  - Name: `Kaizenizer`
+  - Type: PostgreSQL
+  - Host, Database, User, Password: fill with your DB information (you know it!)
+  - SSL Mode: depends on your DB server (if you use Heroku PG, select `require`)
+  - Click "Save & Test", it should tell if it worked.
+- Select "Create" (the + sign) and "Import". Paste the Grafana export JSON ([here](https://raw.githubusercontent.com/rchampourlier/kaizenizer/master/grafana/main.json).
 
 ## Implementation
 
